@@ -1,0 +1,78 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.18;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract BlanketSubscription is ERC20, Ownable {
+    enum BlanketType { Cotton, Wool, Fleece, Silk, Cashmere }
+
+    event BlanketRedeemed(address indexed account, BlanketType blanketType, uint256 blanketCost);
+    event RewardClaimed(address indexed account, uint256 rewardAmount);
+
+    mapping(address => BlanketType) public userBlankets;
+    mapping(address => uint256) public userRewards;
+
+    uint256 public constant CottonBlanketCost = 100;
+    uint256 public constant WoolBlanketCost = 200;
+    uint256 public constant FleeceBlanketCost = 300;
+    uint256 public constant SilkBlanketCost = 400;
+    uint256 public constant CashmereBlanketCost = 500;
+    uint256 public constant Reward_Per_Blanket = 50;
+
+    constructor(address initialOwner) ERC20("Blanket Token", "BLK") Ownable(initialOwner) {}
+
+    function mintTokens(address to, uint256 total) public onlyOwner {
+        _mint(to, total);
+    }
+
+    function burnTokens(address from, uint256 total) public onlyOwner {
+        _burn(from, total);
+    }
+
+    function transferTokens(address from, address to, uint256 total) external onlyOwner {
+        _transfer(from, to, total);
+    }
+
+    function redeemBlanket(uint8 blanketNumber) public {
+        require(blanketNumber >= 1 && blanketNumber <= 5, "Invalid blanket number");
+
+        BlanketType blanket;
+        uint256 blanketCost;
+
+        if (blanketNumber == 1) {
+            require(balanceOf(msg.sender) >= CottonBlanketCost, "Insufficient funds for blanket redemption");
+            blanket = BlanketType.Cotton;
+            blanketCost = CottonBlanketCost;
+            _burn(msg.sender, blanketCost);
+        } else if (blanketNumber == 2) {
+            require(balanceOf(msg.sender) >= WoolBlanketCost, "Insufficient funds for blanket redemption");
+            blanket = BlanketType.Wool;
+            blanketCost = WoolBlanketCost;
+            _burn(msg.sender, blanketCost);
+        } else if (blanketNumber == 3) {
+            require(balanceOf(msg.sender) >= FleeceBlanketCost, "Insufficient funds for blanket redemption");
+            blanket = BlanketType.Fleece;
+            blanketCost = FleeceBlanketCost;
+            _burn(msg.sender, blanketCost);
+        } else if (blanketNumber == 4) {
+            require(balanceOf(msg.sender) >= SilkBlanketCost, "Insufficient funds for blanket redemption");
+            blanket = BlanketType.Silk;
+            blanketCost = SilkBlanketCost;
+            _burn(msg.sender, blanketCost);
+        } else {
+            require(balanceOf(msg.sender) >= CashmereBlanketCost, "Insufficient funds for blanket redemption");
+            blanket = BlanketType.Cashmere;
+            blanketCost = CashmereBlanketCost;
+            _burn(msg.sender, blanketCost);
+        }
+
+        userBlankets[msg.sender] = blanket;
+        emit BlanketRedeemed(msg.sender, blanket, blanketCost);
+
+        // Claim rewards for the redeemed blanket
+        uint256 rewardAmount = blanketCost / 2; // Example: Half of the blanket cost as a reward
+        userRewards[msg.sender] += rewardAmount;
+        emit RewardClaimed(msg.sender, rewardAmount);
+    }
+}
